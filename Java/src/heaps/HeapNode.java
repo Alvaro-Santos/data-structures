@@ -22,7 +22,6 @@ SOFTWARE.
 */
 package heaps;
 
-
 public class HeapNode implements CircularLinkedListNode<HeapNode> {
 	int key;
 	int degree;

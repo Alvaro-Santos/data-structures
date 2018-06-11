@@ -184,7 +184,7 @@ public class FibHeap implements Iterable<HeapNode> {
 	public Iterator<HeapNode> iterator() {
 		return new Iterator<HeapNode>() {
 			Deque<Integer> sizes = new LinkedList<>();
-			HeapNode node = root_list.node;
+			HeapNode node = min;//root_list.node;	//to guarantee that the first element returned by the iterator is the minimum element
 			int elems = size;
 			
 			{

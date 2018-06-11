@@ -24,6 +24,7 @@ package heaps;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -41,7 +42,7 @@ public class Main {
 		return true;
 	}
 	
-	public static void main(String[] args) {
+	public static void test6(String[] args) {
 		FibHeap heap = new FibHeap();
 		Random rand = new Random();
 		
@@ -139,7 +140,7 @@ public class Main {
 		System.out.println(heap);
 	}
 	
-	public static void test2(String[] args) {
+	public static void main(String[] args) {
 		System.out.println(Integer.MAX_VALUE + " -> " + FibHeap.phi_log(Integer.MAX_VALUE));
 		System.out.println(Long.MAX_VALUE + " -> " + FibHeap.phi_log(Long.MAX_VALUE));
 		System.out.println((Double.MAX_VALUE) + " -> " + FibHeap.phi_log(Double.MAX_VALUE));
@@ -153,7 +154,21 @@ public class Main {
 		heap.insert(new HeapNode(3));
 		heap.insert(new HeapNode(19));
 		heap.insert(new HeapNode(0));
-	
+
+		Iterator<HeapNode> it = heap.iterator();
+		while(it.hasNext()) {
+			System.out.println(it.next().toString());
+		}
+
+		heap.insert(new HeapNode(-99));
+		heap.removeMin();
+		System.out.println("--");
+
+		it = heap.iterator();
+		while(it.hasNext()) {
+			System.out.println(it.next().toString());
+		}
+		
 		System.out.println("Heap size: " + heap.size());
 		System.out.println(heap.toString());
 		System.out.println();
