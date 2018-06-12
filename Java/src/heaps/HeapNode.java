@@ -89,16 +89,4 @@ public class HeapNode implements CircularLinkedListNode<HeapNode> {
 	public String toString() {
 		return Integer.toString(key);
 	}
-	@Override
-	public String string(int tabs) {
-		String result;
-		
-		if(degree > 0) {
-			result = Main.repeat("\t", tabs) + "{" + key + " (parent " + parent + ") " + ": " + System.lineSeparator() + children.string(tabs + 1) + System.lineSeparator() + Main.repeat("\t", tabs) + "}";
-		} else {
-			result = Main.repeat("\t", tabs) + "{" + key + " (parent " + parent + ") " + "}";
-		}
-		
-		return result;
-	}
 }

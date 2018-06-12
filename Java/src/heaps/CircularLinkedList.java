@@ -108,17 +108,17 @@ public class CircularLinkedList<T extends CircularLinkedListNode<T>> implements 
 		};
 	}
 
-	public String string(int i) {
+	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		
 		Iterator<T> it = this.iterator();
 		while(it.hasNext()) {
 			T elem = it.next();
 			
-			sb.append(elem.string(i));
+			sb.append(elem.toString());
 			
 			if(it.hasNext()) {
-				sb.append("," + System.lineSeparator());
+				sb.append(", ");
 			}
 		}
 

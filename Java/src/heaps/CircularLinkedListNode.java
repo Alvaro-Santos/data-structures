@@ -27,5 +27,5 @@ public interface CircularLinkedListNode<T> {
 	void next(T node);
 	T prev();
 	void prev(T node);
-	String string(int tabs);
+	String toString();
 }

@@ -30,7 +30,7 @@ public class FibHeap implements Iterable<HeapNode> {
 	private static final double golden_ratio = (1 + Math.sqrt(5))/2;
 	private static final double ln_of_golden_ratio = Math.log(golden_ratio);
 
-	public static final double phi_log(final double value) {
+	public static final double phi_log(final double value) {	//empirically tested for up to Double.MAX_VALUE
 		return Math.log(value)/ln_of_golden_ratio;
 	}
 
@@ -175,10 +175,10 @@ public class FibHeap implements Iterable<HeapNode> {
 		return size;
 	}
 
-	@Override
-	public String toString() {
-		return "[" + System.lineSeparator() + root_list.string(1) + System.lineSeparator() + "]";
-	}
+//	@Override
+//	public String toString() {
+//		return "[" + System.lineSeparator() + root_list.string(1) + System.lineSeparator() + "]";
+//	}
 
 	@Override
 	public Iterator<HeapNode> iterator() {
