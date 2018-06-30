@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package heaps.tests;
+package heaps.fibonacci.tests;
 
 import static org.junit.Assert.*;
 
@@ -32,12 +32,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
-import heaps.FibHeap;
-import heaps.HeapNode;
+import heaps.fibonacci.FibHeap;
+import heaps.fibonacci.HeapNode;
 
 public class FibHeapTests {
+	private static final int TEST_REPETITIONS = 1;
+
 	private static final int MAX_INSERTIONS = 500000;	//Should be at least 1 (it's used in Random#nextInt(int bound), which requires bound > 0)
 	private static final int MAX_KEY = 50000;
 	private static final int MIN_KEY = -25000;
@@ -62,21 +64,21 @@ public class FibHeapTests {
 	 * because there's no reason for the heap to even
 	 * attempt to modify its nodes' values).
 	 */
-	private static final boolean compareMinRemovals(final List<Integer> insertions, final FibHeap heap) {
+	private static final <K extends Comparable<? super K>, V> boolean compareMinRemovals(final List<K> insertions, final FibHeap<K, V> heap) {
 		Collections.sort(insertions);
 
 		int expected_size = insertions.size();
-		for(final int element : insertions) {
+		for(final K element : insertions) {
 			if(heap.size() != expected_size) {
 				return false;
 			} else {
 				--expected_size;
 			}
 
-			final int min_key = heap.min().key();
-			final int removed_key = heap.removeMin().key();
+			final K min_key = heap.min().key();
+			final K removed_key = heap.removeMin().key();
 
-			if(min_key != removed_key || removed_key != element) {
+			if(!min_key.equals(removed_key) || !removed_key.equals(element)) {
 				return false;
 			}
 		}
@@ -92,11 +94,11 @@ public class FibHeapTests {
 	 * Guarantees that the heap, supposedly empty,
 	 * is in a valid state (has size 0, etc).
 	 */
-	private void validEmptyState(final FibHeap heap) {
+	private static final <K extends Comparable<? super K>, V> void validEmptyState(final FibHeap<K, V> heap) {
 		assertEquals(heap.size(), 0);
-		final HeapNode reported_min = heap.min();
+		final HeapNode<K, V> reported_min = heap.min();
 		assertEquals(reported_min, null);
-		assertEquals(reported_min, heap.removeMin());
+		assertTrue(reported_min == heap.removeMin());
 	}
 
 	/**
@@ -105,40 +107,40 @@ public class FibHeapTests {
 	 * properties of the heap (e.g. iterating over
 	 * it does not alter it, etc).
 	 */
-	@Test
+	@RepeatedTest(TEST_REPETITIONS)
 	public void constructorTest() {
-		FibHeap heap = new FibHeap();
+		FibHeap<Integer, Integer> heap = new FibHeap<>();
 		validEmptyState(heap);
 
-		for(@SuppressWarnings("unused") HeapNode node : heap) {
+		for(@SuppressWarnings("unused") HeapNode<Integer, Integer> node : heap) {
 			fail("There should be nothing to iterate over");
 		}
 
 		final int elem = generateElement(new Random());
-		heap.insert(new HeapNode(elem));
+		heap.insert(elem, elem);
 
 		assertEquals(heap.size(), 1);
-		HeapNode reported_min = heap.min();
-		assertEquals(reported_min.key(), elem);
+		HeapNode<Integer, Integer> reported_min = heap.min();
+		assertEquals((int) reported_min.key(), elem);
 
-		final Iterator<HeapNode> it = heap.iterator();
+		final Iterator<HeapNode<Integer, Integer>> it = heap.iterator();
 
 		assertTrue(it.hasNext());
-		final HeapNode first_it = it.next();
-		assertEquals(first_it.key(), elem);
+		final HeapNode<Integer, Integer> first_it = it.next();
+		assertEquals((int) first_it.key(), elem);
 		assertFalse(it.hasNext());
 
 		assertEquals(heap.size(), 1);
 		reported_min = heap.min();
-		assertEquals(reported_min.key(), elem);
-		assertEquals(reported_min, heap.removeMin());
+		assertEquals((int) reported_min.key(), elem);
+		assertTrue(reported_min == heap.removeMin());
 
 		validEmptyState(heap);
 
-		heap = heap.union(new FibHeap());
+		heap = heap.union(new FibHeap<>());
 		validEmptyState(heap);
 
-		heap = (new FibHeap()).union(heap);
+		heap = (new FibHeap<Integer, Integer>()).union(heap);
 		validEmptyState(heap);
 	}
 
@@ -149,7 +151,7 @@ public class FibHeapTests {
 	 * returned by the iterator will be the least
 	 * element in the heap) as well.
 	 */
-	@Test
+	@RepeatedTest(TEST_REPETITIONS)
 	public void iteratorTest() {
 		final Random rand = new Random();
 
@@ -158,7 +160,7 @@ public class FibHeapTests {
 		//Creates a map of <elements, number of times they appear>,
 		//and puts them into the heap.
 		final Map<Integer, Integer> map = new HashMap<>(Math.abs(MAX_KEY) + Math.abs(MIN_KEY));
-		final FibHeap heap = new FibHeap();
+		final FibHeap<Integer, Integer> heap = new FibHeap<>();
 		for(int i = 0; i < insertions; ++i) {
 			final int elem = generateElement(rand);
 
@@ -168,13 +170,13 @@ public class FibHeapTests {
 				map.put(elem, map.get(elem) + 1);
 			}
 
-			heap.insert(new HeapNode(elem));
+			heap.insert(elem, elem);
 		}
 
 		//Checks that each element appears the correct
 		//amount of times in the heap.
 		int iterations = heap.size();
-		for(final HeapNode node : heap) {
+		for(final HeapNode<Integer, Integer> node : heap) {
 			if(iterations == 0) {
 				fail("Shouldn't have found more than " + heap.size() + " nodes in the iterator");
 			}
@@ -184,7 +186,7 @@ public class FibHeapTests {
 			//(This is the only order guarantee provided by the
 			//Fibonacci Heap's iterator).
 			if(iterations == heap.size()) {
-				assertTrue(node == heap.min());
+				assertEquals(node, heap.min());
 			}
 
 			final int key = node.key();
@@ -211,15 +213,17 @@ public class FibHeapTests {
 	 * removes some things and checks that the size
 	 * is still coherent.
 	 */
-	@Test
+	@RepeatedTest(TEST_REPETITIONS)
 	public void sizeTest() {
 		final Random rand = new Random();
 
 		final int insertions = rand.nextInt(Math.max(1, MAX_INSERTIONS)) + 1;
 
-		final FibHeap heap = new FibHeap();
+		final FibHeap<Integer, Integer> heap = new FibHeap<>();
 		for(int i = 0; i < insertions; ++i) {
-			heap.insert(new HeapNode(generateElement(rand)));
+			final int elem = generateElement(rand);
+
+			heap.insert(elem, elem);
 		}
 
 		final int max_size = heap.size();
@@ -238,32 +242,32 @@ public class FibHeapTests {
 	 * it inserts things into 2 heaps, joins them and then checks that it
 	 * the resulting heap had what it was expected to have.
 	 */
-	@Test
+	@RepeatedTest(TEST_REPETITIONS)
 	public void unionTest() {
 		final Random rand = new Random();
 
 		final int insertions1 = rand.nextInt(Math.max(MAX_INSERTIONS/2, 1)) + 1,
 				  insertions2 = rand.nextInt(Math.max(MAX_INSERTIONS/2, 1)) + 1;
 
-		final FibHeap heap1 = new FibHeap(),
-					  heap2 = new FibHeap();
+		final FibHeap<Integer, Integer> heap1 = new FibHeap<>(),
+					  					heap2 = new FibHeap<>();
 		final List<Integer> insertions_list = new ArrayList<>(insertions1);
 
 		for(int i = 0; i < insertions1; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap1.insert(new HeapNode(elem));
+			heap1.insert(elem, elem);
 		}
 
 		for(int i = 0; i < insertions2; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap2.insert(new HeapNode(elem));
+			heap2.insert(elem, elem);
 		}
 
-		final FibHeap heap = heap1.union(heap2);
+		final FibHeap<Integer, Integer> heap = heap1.union(heap2);
 		assertTrue(compareMinRemovals(insertions_list, heap));
 	}
 
@@ -273,20 +277,20 @@ public class FibHeapTests {
 	 * all the removals match up with the information
 	 * in the list.
 	 */
-	@Test
+	@RepeatedTest(TEST_REPETITIONS)
 	public void insertionRemovalTest() {
 		final Random rand = new Random();
 
 		final int insertions = rand.nextInt(Math.max(MAX_INSERTIONS, 1)) + 1;
 
-		final FibHeap heap = new FibHeap();
+		final FibHeap<Integer, Integer> heap = new FibHeap<>();
 		final List<Integer> insertions_list = new ArrayList<>(insertions);
 
 		for(int i = 0; i < insertions; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap.insert(new HeapNode(elem));
+			heap.insert(elem, elem);
 		}
 
 		assertTrue(compareMinRemovals(insertions_list, heap));
@@ -296,7 +300,7 @@ public class FibHeapTests {
 	 * This is a pretty complex test. It tries out
 	 * every operation, basically.
 	 */
-	@Test
+	@RepeatedTest(TEST_REPETITIONS)
 	public void complexTest() {
 		final int complex_insertions = Math.max(5, ((MAX_INSERTIONS)/5) * 5);	//Guarantees that the number of insertions will be divisible by 5 and > 0
 
@@ -306,52 +310,52 @@ public class FibHeapTests {
 
 		final int first_wave_maximum_insertions = (complex_insertions * 8)/5;	//4 heaps get 8/5 of the elements
 
-		final FibHeap heap1 = new FibHeap(),
-					  heap2 = new FibHeap(),
-					  heap3 = new FibHeap(),
-					  heap4 = new FibHeap();
+		final FibHeap<Integer, Integer> heap1 = new FibHeap<>(),
+										heap2 = new FibHeap<>(),
+										heap3 = new FibHeap<>(),
+										heap4 = new FibHeap<>();
 
 		for(int i = 0; i < first_wave_maximum_insertions/4; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap1.insert(new HeapNode(elem));
+			heap1.insert(elem, elem);
 		}
 
 		for(int i = 0; i < first_wave_maximum_insertions/8; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap2.insert(new HeapNode(elem));
+			heap2.insert(elem, elem);
 		}
 
 		for(int i = 0; i < first_wave_maximum_insertions/2; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap3.insert(new HeapNode(elem));
+			heap3.insert(elem, elem);
 		}
 
 		for(int i = 0; i < first_wave_maximum_insertions/8; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap4.insert(new HeapNode(elem));
+			heap4.insert(elem, elem);
 		}
 
 		assertEquals(heap1.size() + heap2.size() + heap3.size() + heap4.size(), first_wave_maximum_insertions);
 
-		FibHeap heap = heap1.union(heap2).union(heap3).union(heap4);
+		FibHeap<Integer, Integer> heap = heap1.union(heap2).union(heap3).union(heap4);
 
 		assertEquals(heap.size(), first_wave_maximum_insertions);
 
-		final FibHeap heap5 = new FibHeap();
+		final FibHeap<Integer, Integer> heap5 = new FibHeap<>();
 
 		for(int i = 0; i < (complex_insertions * 2)/5; ++i) {	//1 heap gets 2/5 of the elements
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap5.insert(new HeapNode(elem));
+			heap5.insert(elem, elem);
 		}
 
 		heap = heap.union(heap5);
@@ -368,11 +372,10 @@ public class FibHeapTests {
 
 			--expected_size1;
 
-			final int min_key = heap.min().key();
-			final int removed_key = heap.removeMin().key();
-			
-			assertEquals(min_key, removed_key);
-			assertEquals(removed_key, insertions_list.get(i).intValue());
+			final HeapNode<Integer, Integer> min = heap.min();
+
+			assertEquals(min, heap.removeMin());
+			assertEquals((int) min.key(), insertions_list.get(i).intValue());
 		}
 
 		assertEquals(heap.size(), expected_size1);
@@ -388,7 +391,7 @@ public class FibHeapTests {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap.insert(new HeapNode(elem));
+			heap.insert(elem, elem);
 		}
 
 		assertEquals(heap.size(), expected_size1 + insertions1);
@@ -403,11 +406,10 @@ public class FibHeapTests {
 
 			--expected_size2;
 
-			final int min_key = heap.min().key();
-			final int removed_key = heap.removeMin().key();
-			
-			assertEquals(min_key, removed_key);
-			assertEquals(removed_key, insertions_list.get(i).intValue());
+			final HeapNode<Integer, Integer> min = heap.min();
+
+			assertEquals(min, heap.removeMin());
+			assertEquals((int) min.key(), insertions_list.get(i).intValue());
 		}
 
 		assertEquals(heap.size(), expected_size2);
@@ -418,13 +420,13 @@ public class FibHeapTests {
 		}
 		insertions_list = temp2;
 
-		final FibHeap heap6 = new FibHeap();
+		final FibHeap<Integer, Integer> heap6 = new FibHeap<>();
 		final int insertions2 = (int) (removals2 * Math.random());
 		for(int i = 0; i < insertions2; ++i) {
 			final int elem = generateElement(rand);
 
 			insertions_list.add(elem);
-			heap6.insert(new HeapNode(elem));
+			heap6.insert(elem, elem);
 		}
 
 		heap = heap6.union(heap);
