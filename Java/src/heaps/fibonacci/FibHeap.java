@@ -28,6 +28,7 @@ import java.util.LinkedList;
 
 //TODO: Explain that this is a min heap
 //TODO: Note that null keys are not permissible
+//TODO: Source the implementation to Introduction to Algorithms, Third Edition
 public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<HeapNode<K, V>> {
 	private static final double golden_ratio = (1 + Math.sqrt(5))/2;
 	private static final double ln_of_golden_ratio = Math.log(golden_ratio);

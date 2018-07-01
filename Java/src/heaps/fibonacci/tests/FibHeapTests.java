@@ -27,22 +27,27 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
+import java.util.Set;
 import org.junit.jupiter.api.RepeatedTest;
 
 import heaps.fibonacci.FibHeap;
 import heaps.fibonacci.HeapNode;
 
+//There's a bit of repetition between some of the tests,
+//but refactoring feels like a waste of time (since
+//there won't be any new tests anyway, and this is
+//already written/reasonably understandable).
 public class FibHeapTests {
-	private static final int TEST_REPETITIONS = 1;
+	private static final int TEST_REPETITIONS = 1;	//Tested with a value of 100 (and it took around 22 minutes)
 
 	private static final int MAX_INSERTIONS = 500000;	//Should be at least 1 (it's used in Random#nextInt(int bound), which requires bound > 0)
 	private static final int MAX_KEY = 50000;
-	private static final int MIN_KEY = -25000;
+	private static final int MIN_KEY = -25000;	//The tests are written assuming that this is < 0.
 
 	private static final int generateElement(final Random rand) {
 		return MIN_KEY + rand.nextInt(MAX_KEY + Math.abs(MIN_KEY) + 1);
@@ -217,7 +222,7 @@ public class FibHeapTests {
 	public void sizeTest() {
 		final Random rand = new Random();
 
-		final int insertions = rand.nextInt(Math.max(1, MAX_INSERTIONS)) + 1;
+		final int insertions = rand.nextInt(MAX_INSERTIONS) + 1;
 
 		final FibHeap<Integer, Integer> heap = new FibHeap<>();
 		for(int i = 0; i < insertions; ++i) {
@@ -281,7 +286,7 @@ public class FibHeapTests {
 	public void insertionRemovalTest() {
 		final Random rand = new Random();
 
-		final int insertions = rand.nextInt(Math.max(MAX_INSERTIONS, 1)) + 1;
+		final int insertions = rand.nextInt(MAX_INSERTIONS) + 1;
 
 		final FibHeap<Integer, Integer> heap = new FibHeap<>();
 		final List<Integer> insertions_list = new ArrayList<>(insertions);
@@ -298,7 +303,9 @@ public class FibHeapTests {
 
 	/**
 	 * This is a pretty complex test. It tries out
-	 * every operation, basically.
+	 * every* operation except for decreaseKey and delete.
+	 * 
+	 * *Not including things like toString(), iterator(), etc.
 	 */
 	@RepeatedTest(TEST_REPETITIONS)
 	public void complexTest() {
@@ -435,5 +442,138 @@ public class FibHeapTests {
 		assertEquals(heap.size(), insertions_list.size());
 
 		assertTrue(compareMinRemovals(insertions_list, heap));
+	}
+
+	//TODO: Add a comment describing the test
+	@RepeatedTest(TEST_REPETITIONS)
+	public void decreaseKeyTest() {
+		final Random rand = new Random();
+
+		final int insertions = rand.nextInt(MAX_INSERTIONS) + 1;
+
+		final FibHeap<Integer, Integer> heap = new FibHeap<>();
+		final Map<Integer, List<HeapNode<Integer, Integer>>> insertions_map = new HashMap<>();
+		final Set<Integer> key_set = new HashSet<>();
+
+		for(int i = 0; i < insertions; ++i) {
+			final int elem = generateElement(rand);
+
+			final HeapNode<Integer, Integer> node = heap.insert(elem, elem);
+
+			if(!insertions_map.containsKey(elem)) {
+				insertions_map.put(elem, new ArrayList<>(1));
+			}
+			insertions_map.get(elem).add(node);
+
+			key_set.add(elem);
+		}
+		final List<Integer> key_list = new ArrayList<>(key_set);
+
+		final int decreases = rand.nextInt(insertions) + 1;
+
+		for(int i = 0; i < decreases; ++i) {
+			if(rand.nextDouble() < 0.01) {	//Sometimes, instead of a key decrease, a min removal will be done instead. Why? To force the heap to consolidate() and, hopefully, test the execution of cascadingCut() (otherwise, the heap would always just be a root_list of nodes with no children)
+				final HeapNode<Integer, Integer> min = heap.removeMin();
+
+				final List<HeapNode<Integer, Integer>> nodes_with_min_key = insertions_map.get(min.key());
+				//Despite what it may seem like, the following lines CANNOT simply be replaced by
+				//"nodes_with_min_key.remove(min)", because HeapNode reimplements equals(),
+				//meaning that, sometimes, we'd just be removing a node with the same key as mean, but
+				//NOT min itself.
+				final Iterator<HeapNode<Integer, Integer>> min_nodes_it = nodes_with_min_key.iterator();
+				while(min_nodes_it.hasNext()) {
+					if(min_nodes_it.next() == min) {
+						min_nodes_it.remove();
+					}
+				}
+
+				if(nodes_with_min_key.size() == 0) {
+					insertions_map.remove(min.key());
+					key_list.remove(min.key());
+				}
+			} else {
+				final int key_index = rand.nextInt(key_list.size());
+				final int old_key = key_list.get(key_index);
+				final int new_key = MIN_KEY + rand.nextInt(old_key + Math.abs(MIN_KEY) + 1);
+	
+				final List<HeapNode<Integer, Integer>> nodes_with_key = insertions_map.get(old_key);
+				final HeapNode<Integer, Integer> node = nodes_with_key.remove(rand.nextInt(nodes_with_key.size()));
+	
+				heap.decreaseKey(node, new_key);
+	
+				if(nodes_with_key.size() == 0) {
+					insertions_map.remove(old_key);
+					key_list.remove(key_index);
+				}
+	
+				if(!insertions_map.containsKey(new_key)) {
+					insertions_map.put(new_key, new ArrayList<>(1));
+					key_list.add(new_key);
+				}
+	
+				insertions_map.get(new_key).add(node);
+			}
+		}
+
+		final List<Integer> keys_repeated = new ArrayList<>(insertions_map.size());
+		for(final Map.Entry<Integer, ? extends List<?>> entry : insertions_map.entrySet()) {
+			for(int i = 0; i < entry.getValue().size(); ++i) {
+				keys_repeated.add(entry.getKey());
+			}
+		}
+
+		assertTrue(compareMinRemovals(keys_repeated, heap));
+	}
+
+	//TODO: Add a comment describing the test
+	@RepeatedTest(TEST_REPETITIONS)
+	public void deleteTest() {
+		final Random rand = new Random();
+
+		final int insertions = rand.nextInt(MAX_INSERTIONS) + 1;
+
+		final FibHeap<Integer, Integer> heap = new FibHeap<>();
+		final Map<Integer, List<HeapNode<Integer, Integer>>> insertions_map = new HashMap<>();
+		final Set<Integer> key_set = new HashSet<>();
+
+		for(int i = 0; i < insertions; ++i) {
+			final int elem = generateElement(rand);
+
+			final HeapNode<Integer, Integer> node = heap.insert(elem, elem);
+
+			if(!insertions_map.containsKey(elem)) {
+				insertions_map.put(elem, new ArrayList<>(1));
+			}
+			insertions_map.get(elem).add(node);
+
+			key_set.add(elem);
+		}
+		final List<Integer> key_list = new ArrayList<>(key_set);
+
+		final int deletions = rand.nextInt(insertions) + 1;
+
+		for(int i = 0; i < deletions; ++i) {
+			final int key_index = rand.nextInt(key_list.size());
+			final int key = key_list.get(key_index);
+
+			final List<HeapNode<Integer, Integer>> nodes_with_key = insertions_map.get(key);
+			final HeapNode<Integer, Integer> node = nodes_with_key.remove(rand.nextInt(nodes_with_key.size()));
+
+			heap.delete(node);
+
+			if(nodes_with_key.size() == 0) {
+				insertions_map.remove(key);
+				key_list.remove(key_index);
+			}
+		}
+
+		final List<Integer> keys_repeated = new ArrayList<>(insertions_map.size());
+		for(final Map.Entry<Integer, ? extends List<?>> entry : insertions_map.entrySet()) {
+			for(int i = 0; i < entry.getValue().size(); ++i) {
+				keys_repeated.add(entry.getKey());
+			}
+		}
+
+		assertTrue(compareMinRemovals(keys_repeated, heap));		
 	}
 }
