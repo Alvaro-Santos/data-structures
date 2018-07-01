@@ -111,7 +111,11 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 			if(this.root_list.size() == 0) {	//Equivalent to checking that min's next is itself
 				this.min = null;
 			} else {
-				this.min = min.next();
+				this.min = min.next();	//Yet another line of code which I'm pretty sure could be ellided
+										//(and again, my hypothesis is backed by the tests passing even if
+										//the line is commented out): consolidate() never uses the value of
+										//this.min, and eventually sets it to the actual new min. Regardless,
+										//I've kept the line, since I'm basing myself on the book.
 
 				consolidate();
 			}
@@ -230,6 +234,42 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 				cascadingCut(node_parent);
 			}
 		}
+	}
+
+	//TODO: Note that passing the node again to any of FibHeap's methods is invalid
+	//Since the Comparable interface has no least element,
+	//we can't use the book's implementation here.
+	//Instead, we have to reimplement decreaseKey() and removeMin().
+	public void delete(final HeapNode<K, V> node) {
+		//decreaseKey() [simplified]
+		final HeapNode<K, V> node_parent = node.parent();
+
+		if(node_parent != null) {
+			cut(node, node_parent);
+			cascadingCut(node_parent);
+		}
+
+		this.min = node;	//I'm pretty sure this is useless, for the same reason as in the case below.
+
+		//removeMin() [simplified]
+		for(HeapNode<K, V> child : node.children()) {
+			this.root_list.addNode(child);
+
+			child.parent(null);
+		}
+
+		this.root_list.remove(node);
+
+		if(this.root_list.size() == 0) {
+			this.min = null;
+		} else {
+			this.min = node.next();	//(This is the case mentioned above).
+									//I'm pretty sure this is useless (for reasons explained in removeMin()).
+
+			consolidate();
+		}
+
+		--this.size;
 	}
 
 	@Override
