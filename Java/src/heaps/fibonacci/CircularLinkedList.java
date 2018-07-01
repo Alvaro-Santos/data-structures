@@ -71,14 +71,14 @@ class CircularLinkedList<K, V> implements Iterable<HeapNode<K, V>> {
 		++this.size;
 	}
 
-	public void remove(final HeapNode<K, V> min) {
-		final HeapNode<K, V> prev = min.prev();
-		final HeapNode<K, V> next = min.next();
+	public void remove(final HeapNode<K, V> node) {
+		final HeapNode<K, V> prev = node.prev();
+		final HeapNode<K, V> next = node.next();
 
 		prev.simpleNext(next);
 		next.simplePrev(prev);
 
-		if(this.head == min) {
+		if(this.head == node) {
 			this.head = this.head.next();
 		}
 

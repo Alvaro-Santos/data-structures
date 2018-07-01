@@ -88,6 +88,11 @@ public class HeapNode<K, V> {
 		this.children.addNode(child);
 		child.parent(this);
 	}
+
+	void removeChild(final HeapNode<K, V> child) {
+		this.children.remove(child);
+		child.parent(null);
+	}
 	
 	CircularLinkedList<K, V> children() {
 		return this.children;

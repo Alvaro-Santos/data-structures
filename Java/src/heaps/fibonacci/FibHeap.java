@@ -26,6 +26,8 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+//TODO: Explain that this is a min heap
+//TODO: Note that null keys are not permissible
 public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<HeapNode<K, V>> {
 	private static final double golden_ratio = (1 + Math.sqrt(5))/2;
 	private static final double ln_of_golden_ratio = Math.log(golden_ratio);
@@ -34,7 +36,7 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		return Math.log(value)/ln_of_golden_ratio;
 	}
 
-	public static final int maximum_root_degree(final int size) {
+	public static final int maximum_node_degree(final int size) {
 		return (int) (Math.floor(phi_log(size)));
 	}
 
@@ -77,7 +79,7 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		return this.min;
 	}
 
-	public FibHeap<K, V> union(FibHeap<K, V> other) {
+	public FibHeap<K, V> union(final FibHeap<K, V> other) {
 		final FibHeap<K, V> heap = new FibHeap<>();
 
 		heap.min = this.min;
@@ -122,7 +124,7 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 
 	private void consolidate() {
 		@SuppressWarnings("unchecked")
-		final HeapNode<K, V>[] A = new HeapNode[maximum_root_degree(this.size) + 1];	//The notation A[0..D(n)] used in the book means that
+		final HeapNode<K, V>[] A = new HeapNode[maximum_node_degree(this.size) + 1];	//The notation A[0..D(n)] used in the book means that
 																						//D(n) is inclusive (so, if maximum_root_degree(this.size) is 0,
 																						//for instance, that means we must have 1 index, the 0th index,
 																						//available - so we require a size of 1 + 0).
@@ -192,9 +194,47 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		other_root.mark(false);
 	}
 
+	public void decreaseKey(final HeapNode<K, V> node, final K newKey) {
+		if(newKey.compareTo(node.key()) > 0) {
+			throw new IllegalArgumentException("The new key must not be greater than the old key.");
+		}
+
+		node.key(newKey);
+		final HeapNode<K, V> node_parent = node.parent();
+
+		if(node_parent != null && newKey.compareTo(node_parent.key()) < 0) {
+			cut(node, node_parent);
+			cascadingCut(node_parent);
+		}
+
+		if(newKey.compareTo(this.min.key()) < 0) {
+			this.min = node;
+		}
+	}
+
+	private void cut(final HeapNode<K, V> child, final HeapNode<K, V> parent) {
+		parent.removeChild(child);
+
+		child.mark(false);
+		this.root_list.addNode(child);
+	}
+
+	private void cascadingCut(final HeapNode<K, V> node) {
+		final HeapNode<K, V> node_parent = node.parent();
+
+		if(node_parent != null) {
+			if(!node.mark()) {
+				node.mark(true);
+			} else {
+				cut(node, node_parent);
+				cascadingCut(node_parent);
+			}
+		}
+	}
+
 	@Override
-	public String toString() {
-		return root_list.toString();
+ 	public String toString() {
+		return this.root_list.toString();
 	}
 
 	@Override
