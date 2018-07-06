@@ -26,17 +26,48 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-//TODO: Explain that this is a min heap
-//TODO: Note that null keys are not permissible
-//TODO: Source the implementation to Introduction to Algorithms, Third Edition
+/**
+ * This is an implementation of a min Fibonacci Heap (it has operations to
+ * retrieve (one of) the node(s) whose key is minimal). This implementation
+ * is based on the one found in the 19th chapter of
+ * "Introduction to Algorithms, Third Edition", by Thomas H. Cormen, Charles
+ * E. Leiserson, Ronald L. Rivest, and Clifford Stein,  (ISBN 978-0-262-03384-8
+ * or 978-0-262-53305-8).<br>
+ * <br>
+ * Note that {@link #delete(HeapNode)} and {@link #decreaseKey(HeapNode, Comparable)}
+ * both require the nodes to be operated upon to be passed directly to them.
+ * This may be inconvenient in some cases, where it would be desirable to
+ * decrease the key of/remove an unknown node, based on its key. Since there
+ * is no (obvious, at least) way of implementing such operations efficiently,
+ * the users of this class may instead implement it themselves, by maintaining
+ * a Map<K, HeapNode<K, V>>, or similar.<br>
+ * <br>
+ * Additionally, it must be noted that this data structure does not support
+ * null keys, and that it supports having multiple nodes with the same key.
+ * 
+ * @param <K> The type of keys the nodes of this heap will hold.
+ * @param <V> The type of values the nodes of this heap will hold.
+ */
 public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<HeapNode<K, V>> {
 	private static final double golden_ratio = (1 + Math.sqrt(5))/2;
 	private static final double ln_of_golden_ratio = Math.log(golden_ratio);
 
+	/**
+	 * @param value The value whose logarithm we wish to
+	 * compute.
+	 * 
+	 * @return The base phi logarithm of value.
+	 */
 	public static final double phi_log(final double value) {	//Empirically tested for up to Double.MAX_VALUE
 		return Math.log(value)/ln_of_golden_ratio;
 	}
 
+	/**
+	 * @param size The size of the current heap.
+	 * 
+	 * @return The highest degree a node may have when it
+	 * belongs to a heap with size nodes.
+	 */
 	public static final int maximum_node_degree(final int size) {
 		return (int) (Math.floor(phi_log(size)));
 	}
@@ -45,16 +76,38 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 	private HeapNode<K, V> min;
 	private CircularLinkedList<K, V> root_list;
 
+	/**
+	 * Constructs an empty Fibonacci Heap.
+	 */
 	public FibHeap() {
 		this.size = 0;
 		this.min = null;
 		this.root_list = new CircularLinkedList<>();
 	}
 
+	/**
+	 * @return The number of nodes in this heap.
+	 */
 	public int size() {
 		return this.size;
 	}
 
+	/** 
+	 * Creates a node holding the key and value passed in,
+	 * inserts it into the Fibonacci Heap, and returns a
+	 * reference to it.<br>
+	 * <br>
+	 * The key must not be null, but this heap allows for
+	 * duplicate (triplicate, ..., n-plicate) keys.<br>
+	 * <br>
+	 * Nodes returned by this operation <b>may</b> be
+	 * validly passed to {@link #delete(HeapNode)} and
+	 * {@link #decreaseKey(HeapNode, Comparable)}.
+	 * 
+	 * @param key The key to insert into the heap.
+	 * @param value The value to insert into the heap.
+	 * @return The inserted node.
+	 */
 	public HeapNode<K, V> insert(final K key, final V value) {
 		final HeapNode<K, V> node = new HeapNode<>(key, value);
 
@@ -76,10 +129,29 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		return node;
 	}
 
+	/**
+	 * Nodes returned by this operation <b>may not</b>
+	 * be passed to {@link #delete(HeapNode)}, nor to
+	 * {@link #decreaseKey(HeapNode, Comparable)}.
+	 * 
+	 * @return A node whose key is no greater than the
+	 * key of any other node in the heap.
+	 */
 	public HeapNode<K, V> min() {
 		return this.min;
 	}
 
+	/**
+	 * This operation "destroys" this heap, as well as the
+	 * one passed in as an argumment (this is due to reusing
+	 * their nodes to create their union, meaning that any
+	 * operations on one of the 3 heaps may interfere with
+	 * another's).
+	 * 
+	 * @param other The heap to join with this one.
+	 * @return A new heap, resulting from joining this with
+	 * other.
+	 */
 	public FibHeap<K, V> union(final FibHeap<K, V> other) {
 		final FibHeap<K, V> heap = new FibHeap<>();
 
@@ -97,6 +169,15 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		return heap;
 	}
 
+	/**
+	 * Removes a node with minimum key from the heap.<br>
+	 * <br>
+	 * Nodes returned by this operation <b>may not</b>
+	 * be passed to {@link #delete(HeapNode)}, nor to
+	 * {@link #decreaseKey(HeapNode, Comparable)}.
+	 * 
+	 * @return The removed node.
+	 */
 	public HeapNode<K, V> removeMin() {
 		final HeapNode<K, V> min = this.min;
 
@@ -127,6 +208,12 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		return min;
 	}
 
+	/**
+	 * This method is a straightforward implementation of
+	 * its analogue in the book mentioned in this class'
+	 * javadoc comment. Its purpose is to "reshape" ("consolidate")
+	 * the heap, by joining root nodes.
+	 */
 	private void consolidate() {
 		@SuppressWarnings("unchecked")
 		final HeapNode<K, V>[] A = new HeapNode[maximum_node_degree(this.size) + 1];	//The notation A[0..D(n)] used in the book means that
@@ -179,6 +266,17 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		}
 	}
 
+	/**
+	 * This method is a straightforward implementation of
+	 * its analogue in the book mentioned in this class'
+	 * javadoc comment. It's used by {@link #consolidate()}
+	 * to perform the actual linking of 2 nodes.
+	 * 
+	 * @param other_root The root to be removed from the
+	 * root list.
+	 * @param new_root The root that other_root will be
+	 * attached to (i.e. its new parent).
+	 */
 	private void link(final HeapNode<K, V> other_root, final HeapNode<K, V> new_root) {
 		this.root_list.remove(other_root);	//I'm pretty sure that this line is not needed:
 											//All it does is remove new_root from the root_list.
@@ -199,7 +297,26 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		other_root.mark(false);
 	}
 
-	public void decreaseKey(final HeapNode<K, V> node, final K newKey) {
+	/**
+	 * Decreases node's key, altering the heap as needed
+	 * to maintain its invariants. The node that this
+	 * operation is used on <b>may</b> be passed again
+	 * to other heap operations, such as
+	 * {@link #decreaseKey(HeapNode, Comparable)} and
+	 * {@link #delete(HeapNode)}.<br>
+	 * <br>
+	 * Note that guaranteeing that newKey is lesser than
+	 * or equal to node's current key is the caller's
+	 * responsibility. Failing to hone this contract will
+	 * result in an exception being thrown.
+	 * 
+	 * @param node The node whose key is to be decreased.
+	 * @param newKey The node's new key.
+	 * 
+	 * @throws IllegalArgumentException If newKey is greater
+	 * than node's key.
+	 */
+	public void decreaseKey(final HeapNode<K, V> node, final K newKey) throws IllegalArgumentException {
 		if(newKey.compareTo(node.key()) > 0) {
 			throw new IllegalArgumentException("The new key must not be greater than the old key.");
 		}
@@ -217,6 +334,17 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		}
 	}
 
+	/**
+	 * This method is a straightforward implementation of
+	 * its analogue in the book mentioned in this class'
+	 * javadoc comment. Its essentially an opposite of
+	 * {@link #link(HeapNode, HeapNode)}: it removes child
+	 * from parent's children list, and adds inserts it
+	 * into the heap as a root.
+	 * 
+	 * @param child The node that'll become a new root.
+	 * @param parent The node that'll lose a child.
+	 */
 	private void cut(final HeapNode<K, V> child, final HeapNode<K, V> parent) {
 		parent.removeChild(child);
 
@@ -224,6 +352,18 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		this.root_list.addNode(child);
 	}
 
+	/**
+	 * This method is a straightforward implementation of
+	 * its analogue in the book mentioned in this class'
+	 * javadoc comment. It cuts node from node's parent,
+	 * and "propagates" the cut upwards (i.e. cuts node's
+	 * parent from its own parent) if it was marked as
+	 * having already lost a child node since it was last
+	 * cut from its parent or linked to a new parent.
+	 * This method stops upon reaching a root node.
+	 *
+	 * @param node The node to (possibly) cut.
+	 */
 	private void cascadingCut(final HeapNode<K, V> node) {
 		final HeapNode<K, V> node_parent = node.parent();
 
@@ -237,7 +377,16 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		}
 	}
 
-	//TODO: Note that passing the node again to any of FibHeap's methods is invalid
+	/**
+	 * Removes the given node from the heap, reshaping it
+	 * if needed to guarantee its invariants. The node that
+	 * this operation is used on <b>may not</b> be passed
+	 * again to other heap operations, such as
+	 * {@link #decreaseKey(HeapNode, Comparable)} and
+	 * {@link #delete(HeapNode)}.<br>
+	 * 
+	 * @param node The node to remove from the heap.
+	 */
 	//Since the Comparable interface has no least element,
 	//we can't use the book's implementation here.
 	//Instead, we have to reimplement decreaseKey() and removeMin().
@@ -278,6 +427,21 @@ public class FibHeap<K extends Comparable<? super K>, V> implements Iterable<Hea
 		return this.root_list.toString();
 	}
 
+	/**
+	 * The iterator returned by this operation steps
+	 * over the heap's nodes in an arbitrary, undefined,
+	 * order. The only guarantee is that the first node
+	 * returned by the iterator will correspond to the one
+	 * that would be returned by an invocation to
+	 *  {@link #removeMin()}.<br>
+	 * <br>
+	 * Nodes returned by the iterator returned by
+	 * this operation <b>may</b> be validly passed
+	 * to {@link #delete(HeapNode)} and
+	 * {@link #decreaseKey(HeapNode, Comparable)}.
+	 * 
+	 * @return An iterator over the heap's nodes.
+	 */
 	@Override
 	public Iterator<HeapNode<K, V>> iterator() {
 		return new Iterator<>() {	//Basically, iterates the nodes by searching for the next one depth-first

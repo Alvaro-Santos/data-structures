@@ -42,6 +42,11 @@ import heaps.fibonacci.HeapNode;
 //but refactoring feels like a waste of time (since
 //there won't be any new tests anyway, and this is
 //already written/reasonably understandable).
+/**
+ * These tests only check the correctness of the "interesting"
+ * heap operations - they don't test {@link FibHeap#toString()}, or
+ * {@link HeapNode#equals(Object)}, for instance.
+ */
 public class FibHeapTests {
 	private static final int TEST_REPETITIONS = 1;	//Tested with a value of 100 (and it took around 22 minutes)
 
@@ -303,9 +308,9 @@ public class FibHeapTests {
 
 	/**
 	 * This is a pretty complex test. It tries out
-	 * every* operation except for decreaseKey and delete.
+	 * every(*) operation except for decreaseKey and delete.
 	 * 
-	 * *Not including things like toString(), iterator(), etc.
+	 * (*)Not including things like toString(), iterator(), etc.
 	 */
 	@RepeatedTest(TEST_REPETITIONS)
 	public void complexTest() {
@@ -444,7 +449,16 @@ public class FibHeapTests {
 		assertTrue(compareMinRemovals(insertions_list, heap));
 	}
 
-	//TODO: Add a comment describing the test
+	/**
+	 * Inserts things into the heap. Afterwards, it performs
+	 * some removeMin() and some decreaseKey() operations
+	 * (about 99% decreaseKey() and 1% removeMin() - to force
+	 * the heap to consolidate).
+	 * 
+	 * After this, it simply checks that the heap contains the
+	 * new decreased keys instead of the old ones, and that they're
+	 * in the order they should be in, via compareMinRemovals().
+	 */
 	@RepeatedTest(TEST_REPETITIONS)
 	public void decreaseKeyTest() {
 		final Random rand = new Random();
@@ -525,7 +539,12 @@ public class FibHeapTests {
 		assertTrue(compareMinRemovals(keys_repeated, heap));
 	}
 
-	//TODO: Add a comment describing the test
+	/**
+	 * This test's code is very similar to decreaseKeyTest()'s
+	 * (it was modelled after it). Some insertions are performed,
+	 * followed by some deletions, and the resulting heap is
+	 * checked via compareMinRemovals().
+	 */
 	@RepeatedTest(TEST_REPETITIONS)
 	public void deleteTest() {
 		final Random rand = new Random();
